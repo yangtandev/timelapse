@@ -137,6 +137,7 @@ function ImageToCollection(rtsp, speed = 10) {
 	});
 
 	const input = `${imagePath}/collection/*.jpg`;
+	const converting = `${videoPath}/collection/converting... please wait.mp4`;
 	const output = `${videoPath}/collection/collection.mp4`;
 	const framesPerSecond = 60 * speed;
 
@@ -152,12 +153,11 @@ function ImageToCollection(rtsp, speed = 10) {
 		.on('stderr', function (err) {})
 		.on('error', function (err, stdout, stderr) {})
 		.on('end', function (err, stdout, stderr) {
-			fs.rmdirSync(`${backupPath}/image/${ip}/collection`, {
-				recursive: true,
-				force: true,
+			fs.move(converting, output, { overwrite: true }, (err) => {
+				if (err) return console.error(err);
 			});
 		})
-		.save(output);
+		.save(converting);
 }
 
 /*
@@ -268,6 +268,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+app.get('/forceReloadSystem', cors('http://localhost:9080'), (req, res) => {
+	const { data } = req.body;
+	try {
+		// Force reload main process.
+		spawn(`${pm2Path} reload time-lapse --force`, { shell: true });
+
+		res.send('success');
+	} catch (err) {
+		res.send(err.message);
+		return;
+	}
+});
+
 app.post('/updateClientList', cors('http://localhost:9080'), (req, res) => {
 	const { data } = req.body;
 	try {
@@ -293,29 +306,31 @@ app.post('/updateClientList', cors('http://localhost:9080'), (req, res) => {
 server.listen(port, () => {
 	console.log(`http://localhost:9080/backup/video`);
 
-	setRtspList();
-	runMediaServer();
-	setInterval(
-		(function runProcesses() {
+	setTimeout(() => {
+		setRtspList();
+		runMediaServer();
+		setInterval(
+			(function runProcesses() {
+				if (config.allRtspList.length > 0) {
+					config.allRtspList.forEach((rtsp) => {
+						RTSPToImage(rtsp);
+						// ImageToVideo(rtsp);
+						clearExpiredBackup(rtsp);
+					});
+				}
+
+				return runProcesses;
+			})(),
+			1000 * 60
+		);
+		setInterval(() => {
 			if (config.allRtspList.length > 0) {
 				config.allRtspList.forEach((rtsp) => {
-					RTSPToImage(rtsp);
-					// ImageToVideo(rtsp);
-					clearExpiredBackup(rtsp);
+					ImageToCollection(rtsp);
 				});
 			}
-
-			return runProcesses;
-		})(),
-		1000 * 60
-	);
-	setInterval(() => {
-		if (config.allRtspList.length > 0) {
-			config.allRtspList.forEach((rtsp) => {
-				ImageToCollection(rtsp);
-			});
-		}
-	}, 1000 * 60 * 30);
+		}, 1000 * 60 * 30);
+	}, 10000);
 });
 
 /* 
