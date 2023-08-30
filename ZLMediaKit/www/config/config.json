@@ -2,7 +2,13 @@
 	"clientList": [
 		{
 			"clientName": "gini",
-			"rtspList": ["rtsp://admin:!QAZ2wsx87518499@192.168.2.51:554"]
+			"rtspList": [
+				"rtsp://admin:!QAZ2wsx87518499@192.168.2.51:554",
+				"rtsp://admin:!QAZ2wsx87518499@192.168.2.60:554"
+			]
 		}
-	]
+	],
+	"retentionDays": 30,
+	"playbackSpeedTime": 10,
+	"frameIntervalInSeconds": 60
 }

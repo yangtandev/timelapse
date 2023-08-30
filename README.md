@@ -43,9 +43,8 @@
 
 ## 備註
 
-如需切換成 HTTPS 協議，可直接於下列路徑的檔案中，將代碼"IS_HTTPS"設置為"true"，最後使用終端機輸入指令 "pm2 reload nvr" 以重整系統:
+如需切換成 HTTPS 協議，可直接於下列路徑的檔案中，將代碼"IS_HTTPS"設置為"true"，最後使用終端機輸入指令 "pm2 reload time-lapse" 以重整系統:
 
 -   $HOME/NVR/index.js
 -   $HOME/NVR/mediaserver.js
--   $HOME/NVR/ZLMediaKit/release/linux/Debug/www/nvr/index.html
 -   $HOME/NVR/ZLMediaKit/release/linux/Debug/www/config/index.html

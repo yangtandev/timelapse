@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Client List</title>
+		<title>Config</title>
 		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 	</head>
@@ -13,19 +13,21 @@
 			<main-component></main-component>
 		</div>
 		<script type="module">
-			import clientList from './client-list/client-list.json' assert { type: 'json' };
+			import CLIENT_LIST from './config/config.json' assert { type: 'json' };
 
-			const app = Vue.createApp({});
+			const DOMAIN_NAME = 'stream.ginibio.com'; // Replace it with your registered domain name.
+			const IS_HTTPS = false; // If you need to use HTTPS, please change it to true
+			const APP = Vue.createApp({});
 
-			app.component('main-component', {
+			APP.component('main-component', {
 				template: `
                     <textarea ref="textarea" :style="{'height': height}" v-model="value" class="textarea"></textarea>
-                    <button @click="updateClientList" class="button">Update Client List</button>
+                    <button @click="updateConfig" class="button">Update Config</button>
                     <button @click="forceReloadSystem" class="button">Force Reload System</button>
                 `,
 				data() {
 					return {
-						value: JSON.stringify(clientList, null, 4),
+						value: JSON.stringify(CLIENT_LIST, null, 4),
 						height: '16px',
 					};
 				},
@@ -47,9 +49,13 @@
 						}
 						this.height = `${count * 20}px`;
 					},
-					updateClientList: function () {
+					updateConfig: function () {
+						const url = IS_HTTPS
+							? `https://${DOMAIN_NAME}:3000/updateConfig`
+							: 'http://localhost:3000/updateConfig';
+
 						axios
-							.post('http://localhost:3000/updateClientList', {
+							.post(url, {
 								data: this.value,
 							})
 							.then((res) => {
@@ -95,7 +101,7 @@
 				},
 			});
 
-			app.mount('#app');
+			APP.mount('#app');
 		</script>
 		<style scoped>
 			.textarea {
