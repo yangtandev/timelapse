@@ -145,3 +145,7 @@ dist
 # backup
 *.jpg
 *.mp4 
+
+# ZLMediaKit
+ZLMediaKit/release/
+ZLMediaKit/build/
