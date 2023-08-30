@@ -1,42 +1,41 @@
-/* 
-    Express.js & Node.js
-*/
-const { spawn } = require('child_process');
-const http = require('http');
-// const https = require('https')
-const fs = require('fs-extra');
-// const options = {
-//     key: fs.readFileSync(`/etc/letsencrypt/live/stream.ginibio.com/privkey.pem`, 'utf8'),
-//     cert: fs.readFileSync(`/etc/letsencrypt/live/stream.ginibio.com/fullchain.pem`, 'utf8'),
-// }
-const express = require('express');
-const cors = require('cors');
-const app = express();
-const server = http.createServer(app);
-// const server = https.createServer(options, app)
-const port = 3000;
-
-/* 
-    Variables
-*/
-const config = {};
-const imageCommands = {};
-const videoCommands = {};
-const collectionCommands = {};
+const SPAWN = require('child_process').spawn;
+const HTTP = require('http');
+const HTTPS = require('https');
+const FS = require('fs-extra');
+const EXPRESS = require('express');
+const CORS = require('cors');
+const APP = EXPRESS();
+const DOMAIN_NAME = 'stream.ginibio.com'; // Replace it with your registered domain name.
+const IS_HTTPS = false; // If you need to use HTTPS, please change it to true
+const SERVER = IS_HTTPS
+	? HTTPS.createServer(
+			{
+				key: FS.readFileSync(
+					`/etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem`,
+					'utf8'
+				),
+				cert: FS.readFileSync(
+					`/etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem`,
+					'utf8'
+				),
+			},
+			APP
+	  )
+	: HTTP.createServer(APP);
+const PORT = 3000;
+const PM2_Path = `$HOME/.nvm/versions/node/v14.16.1/bin/pm2`;
+const BACKUP_PATH = `./ZLMediaKit/release/linux/Debug/www/backup`;
+const CONFIG_PATH = `./ZLMediaKit/release/linux/Debug/www/config/config.json`;
+const FFMPEG = require('fluent-ffmpeg');
+FFMPEG.setFfmpegPath(`/usr/bin/ffmpeg`);
+const IMAGE_COMMANDS = {};
+const VIDEO_COMMANDS = {};
+const COLLECTION_COMMANDS = {};
+let CONFIG = {};
+let INTERVAL_PROCESS;
 
 /*
-    Paths
-*/
-const pm2Path = `$HOME/.nvm/versions/node/v14.16.1/bin/pm2`;
-const sslPath = './certificates/ssl.pem';
-const mediaServerPath = './ZLMediaKit/release/linux/Debug/MediaServer';
-const backupPath = `./ZLMediaKit/release/linux/Debug/www/backup`;
-const clientListPath = `./ZLMediaKit/release/linux/Debug/www/client-list/client-list.json`;
-const ffmpeg = require('fluent-ffmpeg');
-ffmpeg.setFfmpegPath(`/usr/bin/ffmpeg`);
-
-/*
-    Convert the original RTSP stream to a format acceptable to Media Server.
+    Convert the original RTSP stream to a format acceptable.
 */
 function RTSPToImage(rtsp) {
 	const ip = rtsp.split('@').pop();
@@ -46,23 +45,23 @@ function RTSPToImage(rtsp) {
 	);
 	const today = now.toISOString().slice(0, 10);
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
-	let output = backupPath;
+	let output = BACKUP_PATH;
 
 	for (let path of ['', 'image', ip, today]) {
 		output += `/${path}`;
-		if (!fs.existsSync(output)) {
-			fs.mkdirSync(output);
+		if (!FS.existsSync(output)) {
+			FS.mkdirSync(output);
 		}
 	}
 
 	output += `/${fileName}.jpg`;
 
-	if (imageCommands.hasOwnProperty(id)) {
-		imageCommands[id].kill('SIGINT');
+	if (IMAGE_COMMANDS.hasOwnProperty(id)) {
+		IMAGE_COMMANDS[id].kill('SIGINT');
 	}
 
-	imageCommands[id] = ffmpeg(rtsp);
-	imageCommands[id]
+	IMAGE_COMMANDS[id] = FFMPEG(rtsp);
+	IMAGE_COMMANDS[id]
 		.addInputOption('-rtsp_transport', 'tcp', '-re', '-y')
 		.addOutputOption('-vframes', 1)
 		.on('stderr', function (err) {})
@@ -74,7 +73,7 @@ function RTSPToImage(rtsp) {
 /*
     Convert all frames at the specified position into a time-lapse video.
 */
-function ImageToVideo(rtsp, speed = 1) {
+function ImageToVideo(rtsp) {
 	const ip = rtsp.split('@').pop();
 	const id = ip.match(/\d+/g);
 	const now = new Date(
@@ -82,25 +81,25 @@ function ImageToVideo(rtsp, speed = 1) {
 	);
 	const today = now.toISOString().slice(0, 10);
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
-	const framesPerSecond = 60 * speed;
-	let imagePath = `${backupPath}/image/${ip}/${today}/*.jpg`;
-	let videoPath = `${backupPath}`;
+	const framesPerSecond = 60 * playbackSpeedTime;
+	let imagePath = `${BACKUP_PATH}/image/${ip}/${today}/*.jpg`;
+	let videoPath = `${BACKUP_PATH}`;
 
 	for (let path of ['video', ip, today]) {
 		videoPath += `/${path}`;
-		if (!fs.existsSync(videoPath)) {
-			fs.mkdirSync(videoPath);
+		if (!FS.existsSync(videoPath)) {
+			FS.mkdirSync(videoPath);
 		}
 	}
 
 	videoPath += `/${fileName}.mp4`;
 
-	if (videoCommands.hasOwnProperty(id)) {
-		videoCommands[id].kill('SIGINT');
+	if (VIDEO_COMMANDS.hasOwnProperty(id)) {
+		VIDEO_COMMANDS[id].kill('SIGINT');
 	}
 
-	videoCommands[id] = ffmpeg(imagePath);
-	videoCommands[id]
+	VIDEO_COMMANDS[id] = FFMPEG(imagePath);
+	VIDEO_COMMANDS[id]
 		.addInputOption('-r', framesPerSecond, '-pattern_type', 'glob')
 		.addOutputOption('-s', 'hd1080')
 		.videoCodec('libx264')
@@ -113,24 +112,24 @@ function ImageToVideo(rtsp, speed = 1) {
 /*
     Convert all frames from all positions into a time-lapse video.
 */
-function ImageToCollection(rtsp, speed = 10) {
+function ImageToCollection(rtsp) {
 	const ip = rtsp.split('@').pop();
 	const id = ip.match(/\d+/g);
-	const imagePath = `${backupPath}/image/${ip}`;
-	const videoPath = `${backupPath}/video/${ip}`;
+	const imagePath = `${BACKUP_PATH}/image/${ip}`;
+	const videoPath = `${BACKUP_PATH}/video/${ip}`;
 
-	if (!fs.existsSync(`${imagePath}/collection`)) {
-		fs.mkdirSync(`${imagePath}/collection`);
+	if (!FS.existsSync(`${imagePath}/collection`)) {
+		FS.mkdirSync(`${imagePath}/collection`);
 	}
-	if (!fs.existsSync(`${videoPath}/collection`)) {
-		fs.mkdirSync(`${videoPath}/collection`);
+	if (!FS.existsSync(`${videoPath}/collection`)) {
+		FS.mkdirSync(`${videoPath}/collection`);
 	}
 
-	fs.readdir(imagePath, (err, dateList) => {
+	FS.readdir(imagePath, (err, dateList) => {
 		if (err) throw err;
 		dateList = dateList.filter((date) => date !== 'collection');
 		dateList.forEach((date) => {
-			fs.copySync(`${imagePath}/${date}`, `${imagePath}/collection`, {
+			FS.copySync(`${imagePath}/${date}`, `${imagePath}/collection`, {
 				overwrite: true,
 			});
 		});
@@ -139,21 +138,21 @@ function ImageToCollection(rtsp, speed = 10) {
 	const input = `${imagePath}/collection/*.jpg`;
 	const converting = `${videoPath}/collection/converting... please wait.mp4`;
 	const output = `${videoPath}/collection/collection.mp4`;
-	const framesPerSecond = 60 * speed;
+	const framesPerSecond = 60 * CONFIG.playbackSpeedTime;
 
-	if (collectionCommands.hasOwnProperty(id)) {
-		collectionCommands[id].kill('SIGINT');
+	if (COLLECTION_COMMANDS.hasOwnProperty(id)) {
+		COLLECTION_COMMANDS[id].kill('SIGINT');
 	}
 
-	collectionCommands[id] = ffmpeg(input);
-	collectionCommands[id]
+	COLLECTION_COMMANDS[id] = FFMPEG(input);
+	COLLECTION_COMMANDS[id]
 		.addInputOption('-r', framesPerSecond, '-pattern_type', 'glob')
 		.addOutputOption('-s', 'hd1080')
 		.videoCodec('libx264')
 		.on('stderr', function (err) {})
 		.on('error', function (err, stdout, stderr) {})
 		.on('end', function (err, stdout, stderr) {
-			fs.move(converting, output, { overwrite: true }, (err) => {
+			FS.move(converting, output, { overwrite: true }, (err) => {
 				if (err) return console.error(err);
 			});
 		})
@@ -169,14 +168,14 @@ function clearExpiredBackup(rtsp) {
 
 	['image'].forEach((path) => {
 		// ['image', 'video'].forEach((path) => {
-		fs.readdir(`${backupPath}/${path}/${ip}`, (err, dateList) => {
+		FS.readdir(`${BACKUP_PATH}/${path}/${ip}`, (err, dateList) => {
 			dateList = dateList.filter((date) => date !== 'collection');
 			dateList.forEach((date) => {
 				const diffTime = Math.abs(new Date(today) - new Date(date));
 				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-				if (diffDays > 30) {
-					fs.rmdirSync(`${backupPath}/${path}/${ip}/${date}`, {
+				if (diffDays > CONFIG.retentionDays) {
+					FS.rmdirSync(`${BACKUP_PATH}/${path}/${ip}/${date}`, {
 						recursive: true,
 						force: true,
 					});
@@ -185,14 +184,14 @@ function clearExpiredBackup(rtsp) {
 		});
 	});
 
-	// fs.readdir(`${backupPath}/video/${ip}/${today}`, (err, filenameList) => {
+	// FS.readdir(`${BACKUP_PATH}/video/${ip}/${today}`, (err, filenameList) => {
 	// 	if (err) throw err;
 
 	// 	filenameList.pop();
 
 	// 	if (filenameList.length > 0) {
 	// 		filenameList.forEach((filename) => {
-	// 			fs.rmSync(`${backupPath}/video/${ip}/${today}/${filename}`, {
+	// 			FS.rmSync(`${BACKUP_PATH}/video/${ip}/${today}/${filename}`, {
 	// 				recursive: true,
 	// 				force: true,
 	// 			});
@@ -205,74 +204,42 @@ function clearExpiredBackup(rtsp) {
     Set rtsp list related variables.
 */
 function setRtspList() {
-	const source = JSON.parse(fs.readFileSync(clientListPath, 'utf8'));
-	config.clientList = source.clientList;
+	const source = JSON.parse(FS.readFileSync(CONFIG_PATH, 'utf8'));
+	CONFIG = JSON.parse(JSON.stringify(source));
 
-	if (config.clientList.length > 0) {
-		config.allRtspList = config.clientList
+	if (CONFIG.clientList.length > 0) {
+		CONFIG.allRtspList = CONFIG.clientList
 			.map((clinet) => clinet.rtspList)
 			.reduce((prev, curr) => prev.concat(curr));
 	} else {
-		config.allRtspList = [];
+		CONFIG.allRtspList = [];
 	}
 }
 
-/* 
-    Run media server。
-*/
-function runMediaServer() {
-	const mediaServer = spawn(`${mediaServerPath} -s ${sslPath}`, {
-		shell: true,
-	});
-
-	mediaServer.stdout.on('data', async (rawData) => {
-		rawData = `${rawData}`;
-
-		if (
-			rawData.includes('end of file') ||
-			rawData.includes('pusher session timeout') ||
-			rawData.includes('no such stream')
-		) {
-			const filteredData = rawData
-				.split(' ')
-				.find(
-					(str) =>
-						str.includes('__defaultVhost__') &&
-						(str.includes('RTSP') ||
-							str.includes('rtsp') ||
-							str.includes('rtmp'))
-				);
-
-			if (filteredData) {
-				const rtsp = config.allRtspList
-					.filter(
-						(rtsp) =>
-							rtsp.split('@').pop().match(/\d/g).join('') ==
-							filteredData.match(/\d/g).join('')
-					)
-					.join(' ');
-				const ip = rtsp.split('@').pop();
-
-				// RTSP reconnection mechanism.
-				if (config.allRtspList.length > 0) {
-					config.allRtspList.forEach((rtsp) => {
-						RTSPToImage(rtsp);
-					});
-				}
+function getInterval() {
+	return setInterval(
+		(function runProcesses() {
+			if (CONFIG.allRtspList.length > 0) {
+				CONFIG.allRtspList.forEach((rtsp) => {
+					RTSPToImage(rtsp);
+					// ImageToVideo(rtsp);
+					clearExpiredBackup(rtsp);
+				});
 			}
-		}
-	});
+			return runProcesses;
+		})(),
+		1000 * CONFIG.screenshotFrequencyInSeconds
+	);
 }
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(__dirname));
+APP.use(CORS());
+APP.use(EXPRESS.json());
+APP.use(EXPRESS.static(__dirname));
 
-app.get('/forceReloadSystem', cors('http://localhost:9080'), (req, res) => {
-	const { data } = req.body;
+APP.get('/forceReloadSystem', (req, res) => {
 	try {
 		// Force reload main process.
-		spawn(`${pm2Path} reload time-lapse --force`, { shell: true });
+		SPAWN(`${PM2_Path} reload time-lapse --force`, { shell: true });
 
 		res.send('success');
 	} catch (err) {
@@ -281,16 +248,17 @@ app.get('/forceReloadSystem', cors('http://localhost:9080'), (req, res) => {
 	}
 });
 
-app.post('/updateClientList', cors('http://localhost:9080'), (req, res) => {
+APP.post('/updateConfig', (req, res) => {
 	const { data } = req.body;
 	try {
 		JSON.parse(data);
 
-		fs.writeFile(clientListPath, data, (err) => {
+		FS.writeFile(CONFIG_PATH, data, (err) => {
 			if (err) throw err;
 
 			setRtspList();
-			runMediaServer();
+			clearInterval(INTERVAL_PROCESS);
+			INTERVAL_PROCESS = getInterval();
 		});
 
 		res.send('success');
@@ -300,32 +268,48 @@ app.post('/updateClientList', cors('http://localhost:9080'), (req, res) => {
 	}
 });
 
+APP.post('/reloadFFmpeg', (req, res) => {
+	const { data } = req.body;
+
+	console.log(data);
+
+	try {
+		const rtsp = CONFIG.allRtspList
+			.filter(
+				(rtsp) =>
+					rtsp
+						.split('@')
+						.pop()
+						.split('/')
+						.shift()
+						.match(/\d/g)
+						.join('') == data.match(/\d/g).join('')
+			)
+			.join(' ');
+
+		if (rtsp) {
+			RTSPToImage(rtsp);
+		} else throw 'RTSP not found';
+
+		res.send('success');
+	} catch (err) {
+		res.send(err);
+		return;
+	}
+});
+
 /*
     Run all necessary processes.
 */
-server.listen(port, () => {
+SERVER.listen(PORT, () => {
 	console.log(`http://localhost:9080/backup/video`);
 
 	setTimeout(() => {
 		setRtspList();
-		runMediaServer();
-		setInterval(
-			(function runProcesses() {
-				if (config.allRtspList.length > 0) {
-					config.allRtspList.forEach((rtsp) => {
-						RTSPToImage(rtsp);
-						// ImageToVideo(rtsp);
-						clearExpiredBackup(rtsp);
-					});
-				}
-
-				return runProcesses;
-			})(),
-			1000 * 60
-		);
+		INTERVAL_PROCESS = getInterval();
 		setInterval(() => {
-			if (config.allRtspList.length > 0) {
-				config.allRtspList.forEach((rtsp) => {
+			if (CONFIG.allRtspList.length > 0) {
+				CONFIG.allRtspList.forEach((rtsp) => {
 					ImageToCollection(rtsp);
 				});
 			}
@@ -345,22 +329,15 @@ process.on('SIGINT', (code) => {
 		});
 
 	// Terminate all processes related to ffmpeg and media server.
-	const killProcesses = spawn('killall -9 ffmpeg MediaServer', {
+	const killProcesses = SPAWN('killall -9 ffmpeg', {
 		shell: true,
 	});
 
-	killProcesses.on('close', (code) => {
-		// Terminate all zombie processes.
-		const killZombieProcesses = spawn(
-			`ps -Al | grep -w Z | awk '{print $4}' | xargs sudo kill -9`,
-			{
-				shell: true,
-			}
-		);
-
-		killZombieProcesses.on('close', (code) => {
-			// setRtspList()
-			// runMediaServer()
-		});
-	});
+	// Terminate all zombie processes.
+	const killZombieProcesses = SPAWN(
+		`ps -Al | grep -w Z | awk '{print $4}' | xargs sudo kill -9`,
+		{
+			shell: true,
+		}
+	);
 });
