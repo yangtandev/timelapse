@@ -73,5 +73,5 @@ pm2 save (記得先使用 pm2 startup 設定開機自動啟動 pm2)
 最後，使用終端機輸入以下指令，以使新配置生效:
 
 ```
-pm2 reload nvr
+pm2 reload time-lapse
 ```
