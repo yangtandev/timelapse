@@ -116,13 +116,17 @@ function ImageToCollection(rtsp) {
 	const ip = rtsp.split('@').pop();
 	const id = ip.match(/\d+/g);
 	const imagePath = `${BACKUP_PATH}/image/${ip}`;
-	const videoPath = `${BACKUP_PATH}/video/${ip}`;
+	let videoPath = `${BACKUP_PATH}`;
 
 	if (!FS.existsSync(`${imagePath}/collection`)) {
 		FS.mkdirSync(`${imagePath}/collection`);
 	}
-	if (!FS.existsSync(`${videoPath}/collection`)) {
-		FS.mkdirSync(`${videoPath}/collection`);
+
+	for (let path of ['video', ip, 'collection']) {
+		videoPath += `/${path}`;
+		if (!FS.existsSync(videoPath)) {
+			FS.mkdirSync(videoPath);
+		}
 	}
 
 	FS.readdir(imagePath, (err, dateList) => {
@@ -136,8 +140,8 @@ function ImageToCollection(rtsp) {
 	});
 
 	const input = `${imagePath}/collection/*.jpg`;
-	const converting = `${videoPath}/collection/converting... please wait.mp4`;
-	const output = `${videoPath}/collection/collection.mp4`;
+	const converting = `${videoPath}/converting... please wait.mp4`;
+	const output = `${videoPath}/collection.mp4`;
 	const framesPerSecond = 60 * CONFIG.playbackSpeedTime;
 
 	if (COLLECTION_COMMANDS.hasOwnProperty(id)) {
@@ -313,7 +317,7 @@ SERVER.listen(PORT, () => {
 					ImageToCollection(rtsp);
 				});
 			}
-		}, 1000 * 60 * 30);
+		}, 1000 * 60 * 5);
 	}, 10000);
 });
 
