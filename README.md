@@ -21,7 +21,7 @@ git clone https://github.com/yangtandev/Time-Lapse.git
 -   FFMpeg: Latest version  
     安裝可參考: https://ubuntuhandbook.org/index.php/2021/05/install-ffmpeg-4-4-ppa-ubuntu-20-04-21-04/
 -   ZLMediaKit: Latest version  
-    進入 $home/NVR/ZLMediaKit，並按照以下教程開始安裝編譯器、依賴庫、構建和編譯項目: https://github.com/ZLMediaKit/ZLMediaKit/wiki/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B
+    進入 $home/Time-Lapse/ZLMediaKit，並按照以下教程開始安裝編譯器、依賴庫、構建和編譯項目: https://github.com/ZLMediaKit/ZLMediaKit/wiki/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B
 -   Nginx: Latest version ( For HTTPS )  
     安裝可參考: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-22-04
 -   Certbot: Latest version ( For HTTPS )  
@@ -65,10 +65,9 @@ pm2 save (記得先使用 pm2 startup 設定開機自動啟動 pm2)
 
 如需切換成 HTTPS 協議，可直接於下列路徑的檔案中，將代碼"IS_HTTPS"設置為"true":
 
--   $HOME/NVR/index.js
--   $HOME/NVR/mediaserver.js
--   $HOME/NVR/ZLMediaKit/release/linux/Debug/www/nvr/index.html
--   $HOME/NVR/ZLMediaKit/release/linux/Debug/www/config/index.html
+-   $HOME/Time-Lapse/index.js
+-   $HOME/Time-Lapse/mediaserver.js
+-   $HOME/Time-Lapse/ZLMediaKit/release/linux/Debug/www/config/index.html
 
 最後，使用終端機輸入以下指令，以使新配置生效:
 
