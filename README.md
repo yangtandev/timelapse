@@ -25,7 +25,8 @@ git clone https://github.com/yangtandev/Time-Lapse.git
 -   Nginx: Latest version ( For HTTPS )  
     安裝可參考: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-22-04
 -   Certbot: Latest version ( For HTTPS )  
-    Certbot 安裝及申請憑證可參考: https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal 。完成後，請於 /etc/nginx/sites-enabled/default 中，找到 listen 443 ssl 的 server，並在裡面加入:
+    安裝及申請憑證可參考: https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal  
+    完成後，請於 /etc/nginx/sites-enabled/default 中，找到 listen 443 ssl 的 server，並在裡面加入:
 
     ```
     location / {
