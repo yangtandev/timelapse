@@ -37,7 +37,7 @@ let INTERVAL_PROCESS;
 /*
     Convert the original RTSP stream to a format acceptable.
 */
-function RTSPToImage(rtsp) {
+async function RTSPToImage(rtsp) {
 	const ip = rtsp.split('@').pop();
 	const id = ip.match(/\d+/g);
 	const now = new Date(
@@ -47,13 +47,13 @@ function RTSPToImage(rtsp) {
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
 	let output = TIME_LAPSE_PATH;
 
-	for (let path of ['', 'backup', 'image', ip, today]) {
+	for (let path of ['backup', 'image', ip, today]) {
 		output += `/${path}`;
 		if (!FS.existsSync(output)) {
 			FS.mkdirSync(output);
 		}
 	}
-
+	const output2 = output;
 	output += `/${fileName}.jpg`;
 
 	if (IMAGE_COMMANDS.hasOwnProperty(id)) {
@@ -66,7 +66,13 @@ function RTSPToImage(rtsp) {
 		.addOutputOption('-vframes', 1)
 		.on('stderr', function (err) {})
 		.on('error', function (err, stdout, stderr) {})
-		.on('end', function (err, stdout, stderr) {})
+		.on('end', async function () {
+			const stat = await FS.stat(output);
+
+			if (stat.isFile() && stat.size == 0) {
+				FS.remove(output);
+			}
+		})
 		.save(output);
 }
 
@@ -130,7 +136,7 @@ function ImageToCollection(rtsp) {
 	}
 
 	FS.readdir(imagePath, (err, dateList) => {
-		if (err) throw err;
+		if (err) console.log(err);
 		dateList = dateList.filter((date) => date !== 'collection');
 		dateList.forEach((date) => {
 			FS.copySync(`${imagePath}/${date}`, `${imagePath}/collection`, {
@@ -161,27 +167,6 @@ function ImageToCollection(rtsp) {
 			});
 		})
 		.save(converting);
-}
-
-/* 
-	Clear files with size 0.
-*/
-function clearUnqualifiedImage(rtsp) {
-	const ip = rtsp.split('@').pop();
-	const imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}`;
-
-	FS.readdir(`${imagePath}/collection`, (err, fileList) => {
-		if (err) throw err;
-
-		fileList.forEach(async (file) => {
-			const filePath = `${imagePath}/collection/${file}`;
-			const stat = await FS.stat(filePath);
-
-			if (stat.isFile() && stat.size == 0) {
-				FS.remove(filePath);
-			}
-		});
-	});
 }
 
 /*
@@ -345,7 +330,6 @@ SERVER.listen(PORT, () => {
 		setInterval(() => {
 			if (CONFIG.allRtspList.length > 0) {
 				CONFIG.allRtspList.forEach((rtsp) => {
-					clearUnqualifiedImage(rtsp);
 					ImageToCollection(rtsp);
 				});
 			}
