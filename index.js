@@ -22,12 +22,12 @@ const SERVER = IS_HTTPS
 			APP
 	  )
 	: HTTP.createServer(APP);
-const PORT = 3000;
+const PORT = 4000;
 const PM2_Path = `$HOME/.nvm/versions/node/v14.16.1/bin/pm2`;
-const BACKUP_PATH = `./ZLMediaKit/release/linux/Debug/www/backup`;
+const TIME_LAPSE_PATH = `./ZLMediaKit/release/linux/Debug/www/time-lapse`;
 const CONFIG_PATH = `./ZLMediaKit/release/linux/Debug/www/config/config.json`;
 const FFMPEG = require('fluent-ffmpeg');
-FFMPEG.setFfmpegPath(`/usr/bin/ffmpeg`);
+FFMPEG.setFfmpegPath(`./ffmpeg/ffmpeg`);
 const IMAGE_COMMANDS = {};
 const VIDEO_COMMANDS = {};
 const COLLECTION_COMMANDS = {};
@@ -45,9 +45,9 @@ function RTSPToImage(rtsp) {
 	);
 	const today = now.toISOString().slice(0, 10);
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
-	let output = BACKUP_PATH;
+	let output = TIME_LAPSE_PATH;
 
-	for (let path of ['', 'image', ip, today]) {
+	for (let path of ['', 'backup', 'image', ip, today]) {
 		output += `/${path}`;
 		if (!FS.existsSync(output)) {
 			FS.mkdirSync(output);
@@ -82,8 +82,8 @@ function ImageToVideo(rtsp) {
 	const today = now.toISOString().slice(0, 10);
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
 	const framesPerSecond = 60 * playbackSpeedTime;
-	let imagePath = `${BACKUP_PATH}/image/${ip}/${today}/*.jpg`;
-	let videoPath = `${BACKUP_PATH}`;
+	let imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}/${today}/*.jpg`;
+	let videoPath = `${TIME_LAPSE_PATH}/backup`;
 
 	for (let path of ['video', ip, today]) {
 		videoPath += `/${path}`;
@@ -115,8 +115,8 @@ function ImageToVideo(rtsp) {
 function ImageToCollection(rtsp) {
 	const ip = rtsp.split('@').pop();
 	const id = ip.match(/\d+/g);
-	const imagePath = `${BACKUP_PATH}/image/${ip}`;
-	let videoPath = `${BACKUP_PATH}`;
+	const imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}`;
+	let videoPath = `${TIME_LAPSE_PATH}/backup`;
 
 	if (!FS.existsSync(`${imagePath}/collection`)) {
 		FS.mkdirSync(`${imagePath}/collection`);
@@ -152,7 +152,7 @@ function ImageToCollection(rtsp) {
 	COLLECTION_COMMANDS[id]
 		.addInputOption('-r', framesPerSecond, '-pattern_type', 'glob')
 		.addOutputOption('-s', 'hd1080')
-		.videoCodec('libx264')
+		.videoCodec('h264_nvenc')
 		.on('stderr', function (err) {})
 		.on('error', function (err, stdout, stderr) {})
 		.on('end', function (err, stdout, stderr) {
@@ -161,6 +161,27 @@ function ImageToCollection(rtsp) {
 			});
 		})
 		.save(converting);
+}
+
+/* 
+	Clear files with size 0.
+*/
+function clearUnqualifiedImage(rtsp) {
+	const ip = rtsp.split('@').pop();
+	const imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}`;
+
+	FS.readdir(`${imagePath}/collection`, (err, fileList) => {
+		if (err) throw err;
+
+		fileList.forEach(async (file) => {
+			const filePath = `${imagePath}/collection/${file}`;
+			const stat = await FS.stat(filePath);
+
+			if (stat.isFile() && stat.size == 0) {
+				FS.remove(filePath);
+			}
+		});
+	});
 }
 
 /*
@@ -172,30 +193,38 @@ function clearExpiredBackup(rtsp) {
 
 	['image'].forEach((path) => {
 		// ['image', 'video'].forEach((path) => {
-		FS.readdir(`${BACKUP_PATH}/${path}/${ip}`, (err, dateList) => {
-			dateList = dateList.filter((date) => date !== 'collection');
-			dateList.forEach((date) => {
-				const diffTime = Math.abs(new Date(today) - new Date(date));
-				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		FS.readdir(
+			`${TIME_LAPSE_PATH}/backup/${path}/${ip}`,
+			(err, dateList) => {
+				dateList = dateList.filter((date) => date !== 'collection');
+				dateList.forEach((date) => {
+					const diffTime = Math.abs(new Date(today) - new Date(date));
+					const diffDays = Math.ceil(
+						diffTime / (1000 * 60 * 60 * 24)
+					);
 
-				if (diffDays > CONFIG.retentionDays) {
-					FS.rmdirSync(`${BACKUP_PATH}/${path}/${ip}/${date}`, {
-						recursive: true,
-						force: true,
-					});
-				}
-			});
-		});
+					if (diffDays > CONFIG.retentionDays) {
+						FS.rmdirSync(
+							`${TIME_LAPSE_PATH}/backup/${path}/${ip}/${date}`,
+							{
+								recursive: true,
+								force: true,
+							}
+						);
+					}
+				});
+			}
+		);
 	});
 
-	// FS.readdir(`${BACKUP_PATH}/video/${ip}/${today}`, (err, filenameList) => {
+	// FS.readdir(`${TIME_LAPSE_PATH}/backup/video/${ip}/${today}`, (err, filenameList) => {
 	// 	if (err) throw err;
 
 	// 	filenameList.pop();
 
 	// 	if (filenameList.length > 0) {
 	// 		filenameList.forEach((filename) => {
-	// 			FS.rmSync(`${BACKUP_PATH}/video/${ip}/${today}/${filename}`, {
+	// 			FS.rmSync(`${TIME_LAPSE_PATH}/backup/video/${ip}/${today}/${filename}`, {
 	// 				recursive: true,
 	// 				force: true,
 	// 			});
@@ -211,8 +240,8 @@ function setRtspList() {
 	const source = JSON.parse(FS.readFileSync(CONFIG_PATH, 'utf8'));
 	CONFIG = JSON.parse(JSON.stringify(source));
 
-	if (CONFIG.clientList.length > 0) {
-		CONFIG.allRtspList = CONFIG.clientList
+	if (CONFIG.timelapseClientList.length > 0) {
+		CONFIG.allRtspList = CONFIG.timelapseClientList
 			.map((clinet) => clinet.rtspList)
 			.reduce((prev, curr) => prev.concat(curr));
 	} else {
@@ -223,6 +252,8 @@ function setRtspList() {
 function getInterval() {
 	return setInterval(
 		(function runProcesses() {
+			setRtspList();
+
 			if (CONFIG.allRtspList.length > 0) {
 				CONFIG.allRtspList.forEach((rtsp) => {
 					RTSPToImage(rtsp);
@@ -306,14 +337,15 @@ APP.post('/reloadFFmpeg', (req, res) => {
     Run all necessary processes.
 */
 SERVER.listen(PORT, () => {
-	console.log(`http://localhost:9080/backup/video`);
+	console.log(`http://localhost:9080/time-lapse/backup/video`);
 
 	setTimeout(() => {
-		setRtspList();
 		INTERVAL_PROCESS = getInterval();
+
 		setInterval(() => {
 			if (CONFIG.allRtspList.length > 0) {
 				CONFIG.allRtspList.forEach((rtsp) => {
+					clearUnqualifiedImage(rtsp);
 					ImageToCollection(rtsp);
 				});
 			}
