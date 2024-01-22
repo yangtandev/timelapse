@@ -54,7 +54,7 @@ pm2 save (記得先使用 pm2 startup 設定開機自動啟動 pm2)
 
 ## 功能介紹
 
-1. 自訂的客戶列表: 可按照需求加入客戶的攝影機串流資訊，支援 RTSP( H264 及 HEVC )協議，並設有多項可調設定，包括檔案保留天數(retentionDays)、播放倍速(playbackSpeedTime)及截圖頻率(screenshotFrequencyInSeconds)等。  
+1. 自訂的客戶列表: 可按照需求加入客戶的攝影機串流資訊，支援 RTSP( H264 及 HEVC )協議，並設有多項可調設定，包括檔案保留天數(retentionDays)、每秒顯示幀數(framesPerSecond)及截圖頻率(screenshotFrequencyInSeconds)等。  
    https://example.com/config  
    http://localhost:9080/config
 2. 自動備分影像串流截圖及合成縮時影像: 按日期、客戶作分類，可依需求線上瀏覽或直接下載影像檔。  
