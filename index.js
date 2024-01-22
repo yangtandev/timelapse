@@ -87,7 +87,7 @@ function ImageToVideo(rtsp) {
 	);
 	const today = now.toISOString().slice(0, 10);
 	const fileName = now.toISOString().slice(0, -5).split('T').join(' ');
-	const framesPerSecond = 60 * playbackSpeedTime;
+	const framesPerSecond = CONFIG.framesPerSecond;
 	let imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}/${today}/*.jpg`;
 	let videoPath = `${TIME_LAPSE_PATH}/backup`;
 
@@ -148,7 +148,7 @@ function ImageToCollection(rtsp) {
 	const input = `${imagePath}/collection/*.jpg`;
 	const converting = `${videoPath}/converting... please wait.mp4`;
 	const output = `${videoPath}/collection.mp4`;
-	const framesPerSecond = 60 * CONFIG.playbackSpeedTime;
+	const framesPerSecond = CONFIG.framesPerSecond;
 
 	if (COLLECTION_COMMANDS.hasOwnProperty(id)) {
 		COLLECTION_COMMANDS[id].kill('SIGINT');
