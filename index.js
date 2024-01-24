@@ -130,7 +130,7 @@ function ImageToCollection(rtsp) {
         if (err) console.log(err);
         dateList = dateList.filter((date) => date !== "collection");
         dateList.forEach((date) => {
-            FS.copySync(`${imagePath}/${date}`, `${imagePath}/collection`, {
+            FS.copy(`${imagePath}/${date}`, `${imagePath}/collection`, {
                 overwrite: true,
             });
         });
@@ -267,12 +267,12 @@ APP.use(EXPRESS.static(__dirname));
 APP.get("/generateTimeLapse", (req, res) => {
     try {
         if (CONFIG.allRtspList.length > 0) {
-            CONFIG.allRtspList.forEach((rtsp) => {
+            for (const rtsp of CONFIG.allRtspList) {
                 ImageToCollection(rtsp);
-            });
-            CONFIG.allRtspList.forEach((rtsp) => {
+            }
+            for (const rtsp of CONFIG.allRtspList) {
                 generateTimeLapse(rtsp);
-            });
+            }
         }
 
         res.send("success");
