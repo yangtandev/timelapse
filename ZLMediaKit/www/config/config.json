@@ -9,6 +9,6 @@
 		}
 	],
 	"retentionDays": 30,
-	"playbackSpeedTime": 60,
-	"screenshotFrequencyInSeconds": 600
+	"framesPerSecond": 60,
+	"screenshotFrequencyInSeconds": 60
 }
