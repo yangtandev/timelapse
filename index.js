@@ -53,7 +53,7 @@ async function RTSPToImage(rtsp) {
             FS.mkdirSync(output);
         }
     }
-    const output2 = output;
+
     output += `/${fileName}.jpg`;
 
     if (IMAGE_COMMANDS.hasOwnProperty(id)) {
