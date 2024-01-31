@@ -15,13 +15,83 @@ git clone https://github.com/yangtandev/Time-Lapse.git
 ## 環境需求
 
 -   Git: Latest version
--   Node.js: 14.16.1 (LTS)  
+-   Node.js: 14.16.1 (LTS) or later  
     請使用 nvm 安裝 Node.js: https://github.com/nvm-sh/nvm
 -   PM2: Latest version
+-   NVIDIA Display Driver: 535.86.10 or later  
+    NVIDIA Driver 安裝可參考: https://www.nvidia.com/Download/index.aspx
+-   CUDA Toolkit: 12.2 or later  
+    CUDA 安裝可參考: https://developer.nvidia.com/cuda-downloads
+-   NVIDIA-Patch: Latest version  
+    此為破解顯卡影像編碼最大限制的補丁，安裝可參考: https://github.com/keylase/nvidia-patch
 -   FFMpeg: Latest version  
-    安裝可參考: https://ubuntuhandbook.org/index.php/2021/05/install-ffmpeg-4-4-ppa-ubuntu-20-04-21-04/
+    安裝可參考:  
+    https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html
+    https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu  
+    https://jackfrisht.medium.com/install-nvidia-driver-via-ppa-in-ubuntu-18-04-fc9a8c4658b9
+    ```
+    // Enter Time-Lapse directory
+    cd ~/Time-Lapse
+    
+    // Clone ffnvcodec
+    git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
+    
+    // Install ffnvcodec
+    cd nv-codec-headers && sudo make install && cd ..
+    
+    // Configure environment
+    sudo nano ~/.bashrc
+    
+    // Add the following content at the end
+    export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
+    
+    // Reload configuration
+    source ~/.bashrc
+    sudo ldconfig
+    
+    // Check whether CUDA is installed successfully
+    nvcc -V
+    
+    // Clone FFmpeg's public GIT repository.
+    git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg/
+    
+    // Enter ffmepg directory
+    cd ./ffmpeg
+    
+    // Get the Dependencies
+    sudo apt-get update -qq && sudo apt-get -y install autoconf automake build-essential cmake git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev libc6 libc6-dev libnuma1 libnuma-dev meson ninja-build pkg-config texinfo unzip wget yasm zlib1g-dev
+    
+    // Configure
+    ./configure --enable-nonfree --enable-cuda-nvcc --enable-libnpp --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 --disable-static --enable-shared --enable-gpl --enable-libx264 --enable-libx265
+    
+    // Compile
+    make -j 8
+    
+    // Install the libraries.
+    sudo make install && cd ..
+    ```
 -   ZLMediaKit: Latest version  
-    進入 $home/Time-Lapse/ZLMediaKit，並按照以下教程開始安裝編譯器、依賴庫、構建和編譯項目: https://github.com/ZLMediaKit/ZLMediaKit/wiki/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B
+    按照以下教程開始安裝編譯器、依賴庫、構建和編譯項目: https://github.com/ZLMediaKit/ZLMediaKit/wiki/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B
+    ```
+    // Enter ZLMediaKit directory
+    cd ~/Time-Lapse/ZLMediaKit
+    
+    // Install the compiler
+    sudo apt-get install build-essential
+    
+    // Install dependent libraries
+    sudo apt-get install libssl-dev
+    sudo apt-get install libsdl-dev
+    sudo apt-get install libavcodec-dev
+    sudo apt-get install libavutil-dev
+    
+    // Build and compile the project
+    mkdir build
+    cd build
+    cmake ..
+    make -j4
+    ```
 -   Nginx: Latest version ( For HTTPS )  
     安裝可參考: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-22-04
 -   Certbot: Latest version ( For HTTPS )  
