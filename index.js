@@ -40,6 +40,7 @@ let INTERVAL_PROCESS;
 async function RTSPToImage(rtsp) {
     const ip = rtsp.split("@").pop();
     const id = ip.match(/\d+/g);
+    const input = `rtsp://localhost:9554/live/${ip}`;
     const now = new Date(
         new Date().getTime() - new Date().getTimezoneOffset() * 60000
     );
@@ -60,7 +61,7 @@ async function RTSPToImage(rtsp) {
         IMAGE_COMMANDS[id].kill("SIGINT");
     }
 
-    IMAGE_COMMANDS[id] = FFMPEG(rtsp);
+    IMAGE_COMMANDS[id] = FFMPEG(input);
     IMAGE_COMMANDS[id]
         .addInputOption("-rtsp_transport", "tcp", "-re", "-y")
         .addOutputOption("-vframes", 1)
@@ -251,7 +252,6 @@ function getInterval() {
                 CONFIG.allRtspList.forEach((rtsp) => {
                     RTSPToImage(rtsp);
                     // ImageToVideo(rtsp);
-                    clearExpiredBackup(rtsp);
                 });
             }
             return runProcesses;
@@ -267,9 +267,6 @@ APP.use(EXPRESS.static(__dirname));
 APP.get("/generateTimeLapse", (req, res) => {
     try {
         if (CONFIG.allRtspList.length > 0) {
-            for (const rtsp of CONFIG.allRtspList) {
-                ImageToCollection(rtsp);
-            }
             for (const rtsp of CONFIG.allRtspList) {
                 generateTimeLapse(rtsp);
             }
@@ -352,6 +349,26 @@ SERVER.listen(PORT, () => {
 
     setTimeout(() => {
         INTERVAL_PROCESS = getInterval();
+
+        setInterval(
+            (function runProcesses() {
+                setRtspList();
+
+                if (CONFIG.allRtspList.length > 0) {
+                    for (const rtsp of CONFIG.allRtspList) {
+                        ImageToCollection(rtsp);
+                    }
+                    for (const rtsp of CONFIG.allRtspList) {
+                        generateTimeLapse(rtsp);
+                    }
+                    for (const rtsp of CONFIG.allRtspList) {
+                        clearExpiredBackup(rtsp);
+                    }
+                }
+                return runProcesses;
+            })(),
+            60000 * 30
+        );
     }, 10000);
 });
 
