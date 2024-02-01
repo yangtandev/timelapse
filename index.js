@@ -384,9 +384,9 @@ process.on("SIGINT", (code) => {
         });
 
     // Terminate all processes related to ffmpeg and media server.
-    const killProcesses = SPAWN("killall -9 ffmpeg", {
-        shell: true,
-    });
+    // const killProcesses = SPAWN("killall -9 ffmpeg", {
+    //     shell: true,
+    // });
 
     // Terminate all zombie processes.
     const killZombieProcesses = SPAWN(
