@@ -68,11 +68,13 @@ async function RTSPToImage(rtsp) {
         .on("stderr", function (err) {})
         .on("error", function (err, stdout, stderr) {})
         .on("end", async function () {
-            const stat = await FS.stat(output);
-
-            if (stat.isFile() && stat.size == 0) {
-                FS.remove(output);
-            }
+           FS.stat(output, (error, stats) => {
+                if (error) {
+                    console.log(error);
+                } else if (stats.isFile() && stats.size == 0) {
+                    FS.remove(output);
+                }
+            });
         })
         .save(output);
 }
@@ -358,16 +360,18 @@ SERVER.listen(PORT, () => {
                     for (const rtsp of CONFIG.allRtspList) {
                         ImageToCollection(rtsp);
                     }
-                    for (const rtsp of CONFIG.allRtspList) {
-                        generateTimeLapse(rtsp);
-                    }
-                    for (const rtsp of CONFIG.allRtspList) {
-                        clearExpiredBackup(rtsp);
-                    }
+                    setTimeout(() => {
+                        for (const rtsp of CONFIG.allRtspList) {
+                            generateTimeLapse(rtsp);
+                        }
+                        for (const rtsp of CONFIG.allRtspList) {
+                            clearExpiredBackup(rtsp);
+                        }
+                    }, 300000);
                 }
                 return runProcesses;
             })(),
-            60000 * 30
+            3600000
         );
     }, 10000);
 });
