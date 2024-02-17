@@ -48,7 +48,7 @@ async function RTSPToImage(rtsp) {
     const fileName = now.toISOString().slice(0, -5).split("T").join(" ");
     let output = TIME_LAPSE_PATH;
 
-    for (let path of ["backup", "image", ip, today]) {
+    for (let path of ["", "backup", "image", ip, today]) {
         output += `/${path}`;
         if (!FS.existsSync(output)) {
             FS.mkdirSync(output);
