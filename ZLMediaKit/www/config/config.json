@@ -1,5 +1,5 @@
 {
-	"clientList": [
+	"timelapseClientList": [
 		{
 			"clientName": "gini",
 			"rtspList": [
@@ -9,6 +9,6 @@
 		}
 	],
 	"retentionDays": 30,
-	"framesPerSecond": 60,
-	"screenshotFrequencyInSeconds": 60
+    	"framesPerSecond": 1440,
+    	"screenshotFrequencyInSeconds": 60
 }
