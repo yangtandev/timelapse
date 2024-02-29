@@ -39,7 +39,7 @@ let INTERVAL_PROCESS;
 */
 async function RTSPToImage(rtsp) {
     const ip = rtsp.split("@").pop();
-    const id = ip.match(/\d+/g);
+    const id = ip.match(/\d+/g).join();
     const input = `rtsp://localhost:9554/live/${ip}`;
     const now = new Date(
         new Date().getTime() - new Date().getTimezoneOffset() * 60000
@@ -84,7 +84,7 @@ async function RTSPToImage(rtsp) {
 */
 function ImageToVideo(rtsp) {
     const ip = rtsp.split("@").pop();
-    const id = ip.match(/\d+/g);
+    const id = ip.match(/\d+/g).join();
     const now = new Date(
         new Date().getTime() - new Date().getTimezoneOffset() * 60000
     );
@@ -145,7 +145,7 @@ function ImageToCollection(rtsp) {
 */
 function generateTimeLapse(rtsp) {
     const ip = rtsp.split("@").pop();
-    const id = ip.match(/\d+/g);
+    const id = ip.match(/\d+/g).join();
     const imagePath = `${TIME_LAPSE_PATH}/backup/image/${ip}`;
     let videoPath = `${TIME_LAPSE_PATH}/backup`;
 
