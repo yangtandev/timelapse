@@ -130,17 +130,3 @@ pm2 save (記得先使用 pm2 startup 設定開機自動啟動 pm2)
 2. 自動備分影像串流截圖及合成縮時影像: 按日期、客戶作分類，可依需求線上瀏覽或直接下載影像檔。  
    https://example.com/backup/video/your_client_name  
    http://localhost:9080/backup/video/your_client_name
-
-## 備註
-
-如需切換成 HTTPS 協議，可直接於下列路徑的檔案中，將代碼"IS_HTTPS"設置為"true":
-
--   $HOME/Time-Lapse/index.js
--   $HOME/Time-Lapse/mediaserver.js
--   $HOME/Time-Lapse/ZLMediaKit/release/linux/Debug/www/config/index.html
-
-最後，使用終端機輸入以下指令，以使新配置生效:
-
-```
-pm2 reload time-lapse
-```
