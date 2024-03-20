@@ -116,7 +116,7 @@ git clone https://github.com/yangtandev/Time-Lapse.git
 ## 快速開始
 
 ```
-cd $HOME/Time-Lapse
+cd $HOME/timelapse
 npm i
 pm2 start ecosystem.config.js
 pm2 save (記得先使用 pm2 startup 設定開機自動啟動 pm2)
