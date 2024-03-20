@@ -1,8 +1,8 @@
 module.exports = {
 	apps: [
 		{
-			name: 'time-lapse',
-			script: 'index.js',
+			name: 'collect-images',
+			script: 'collect-images.js',
 			time: true,
 		},
 		{
