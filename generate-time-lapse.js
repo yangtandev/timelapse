@@ -34,7 +34,7 @@ function generateTimeLapse(rtsp) {
 	COLLECTION_COMMANDS[id] = FFMPEG(input);
 	COLLECTION_COMMANDS[id]
 		.addInputOption('-r', framesPerSecond, '-pattern_type', 'glob')
-		.addOutputOption('-s', 'hd1080', '-shortest', '-b:v', '5M')
+		.addOutputOption('-s', 'hd1080', '-shortest', '-b:v', '2M')
 		.videoCodec('h264_nvenc')
 		.on('stderr', function (err) {})
 		.on('error', function (err, stdout, stderr) {
