@@ -10,6 +10,7 @@
 - 獲取原碼並執行自動安裝檔，Mediaserver 將於安裝完成後自動啟動。  
 ```
 git clone https://github.com/yangtandev/timelapse.git
+sudo chmod +x $HOME/timelapse/setup_mediaserver.sh
 $HOME/timelapse/setup_mediaserver.sh
 ```
 
