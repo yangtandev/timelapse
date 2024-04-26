@@ -164,7 +164,7 @@ APP.get('/generateTimeLapse', (req, res) => {
 APP.get('/forceReloadSystem', (req, res) => {
 	try {
 		// Force reload main process.
-		SPAWN(`${PM2_Path} reload collect-images --force`, { shell: true });
+		SPAWN(`${PM2_Path} reload mediaserver --force`, { shell: true });
 
 		res.send('success');
 	} catch (err) {
@@ -189,36 +189,6 @@ APP.post('/updateConfig', (req, res) => {
 		res.send('success');
 	} catch (err) {
 		res.send(err.message);
-		return;
-	}
-});
-
-APP.post('/reloadFFmpeg', (req, res) => {
-	const { data } = req.body;
-
-	console.log(data);
-
-	try {
-		const rtsp = CONFIG.allRtspList
-			.filter(
-				(rtsp) =>
-					rtsp
-						.split('@')
-						.pop()
-						.split('/')
-						.shift()
-						.match(/\d/g)
-						.join('') == data.match(/\d/g).join('')
-			)
-			.join(' ');
-
-		if (rtsp) {
-			RTSPToImage(rtsp);
-		} else throw 'RTSP not found';
-
-		res.send('success');
-	} catch (err) {
-		res.send(err);
 		return;
 	}
 });
@@ -267,3 +237,7 @@ process.on('SIGINT', (code) => {
 		}
 	);
 });
+
+module.exports = {
+	RTSPToImage,
+};
