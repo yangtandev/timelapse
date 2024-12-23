@@ -96,7 +96,7 @@ function clearExpiredBackup(rtsp) {
 			const diffTime = Math.abs(new Date(today) - new Date(date));
 			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-			if (diffDays > CONFIG.retentionDays) {
+			if (diffDays >= CONFIG.retentionDays) {
 				FS.rmdirSync(`${TIME_LAPSE_PATH}/backup/image/${ip}/${date}`, {
 					recursive: true,
 					force: true,
