@@ -40,9 +40,14 @@ async function RTSPToImage(rtsp) {
 	output += `/${fileName}.jpg`;
 
 	if (IMAGE_COMMANDS.hasOwnProperty(id)) {
-		IMAGE_COMMANDS[id].kill('SIGINT');
+		try {
+			IMAGE_COMMANDS[id].kill('SIGINT');
+			delete IMAGE_COMMANDS[id];
+		} catch (e) {
+			console.warn(`Failed to kill ffmpeg for ${id}`, e.message);
+		}
 	}
-
+	
 	IMAGE_COMMANDS[id] = FFMPEG(input);
 	IMAGE_COMMANDS[id]
 		.addInputOption('-rtsp_transport', 'tcp', '-re', '-y')
