@@ -28,7 +28,12 @@ function generateTimeLapse(rtsp) {
 	const framesPerSecond = CONFIG.framesPerSecond;
 
 	if (COLLECTION_COMMANDS.hasOwnProperty(id)) {
-		COLLECTION_COMMANDS[id].kill('SIGINT');
+		try {
+			COLLECTION_COMMANDS[id].kill('SIGINT');
+			delete COLLECTION_COMMANDS[id];
+		} catch (e) {
+			console.warn(`Failed to kill ffmpeg for ${id}`, e.message);
+		}
 	}
 
 	COLLECTION_COMMANDS[id] = FFMPEG(input);
